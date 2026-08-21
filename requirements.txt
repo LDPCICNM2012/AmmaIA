@@ -12,8 +12,10 @@ pydantic[email]>=2.6.0
 google-genai>=0.1.1
 
 # Autenticación, Criptografía y Seguridad
-python-jose[cryptography]>=3.3.0
+PyJWT>=2.8.0
+cryptography>=42.0.0
 passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.1
 
 # Generación y Exportación de Documentos
 reportlab>=4.1.0
