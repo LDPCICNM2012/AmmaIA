@@ -1,1 +1,1 @@
-# AmmayIA Backend Package
+# AmmaIA Backend Package

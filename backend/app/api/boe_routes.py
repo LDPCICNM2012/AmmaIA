@@ -33,5 +33,5 @@ def endpoint_boe_hoy(fecha_str: Optional[str] = None):
 
 @router.get("/codigos")
 def endpoint_codigos_consolidados():
-    """Devuelve el catálogo de Códigos Consolidados de España disponibles en AmmayIA."""
+    """Devuelve el catálogo de Códigos Consolidados de España disponibles en AmmaIA."""
     return {"codigos": list(CODIGOS_CONSOLIDADOS_MAPA.values())}

@@ -168,13 +168,13 @@ def ingestar_texto_manual():
         materia=materia,
         guardar_disco=True
     )
-    print(f"✅ ¡Artículo '{norma} - {art}' indexado con éxito en AmmayIA!")
+    print(f"✅ ¡Artículo '{norma} - {art}' indexado con éxito en AmmaIA!")
 
 
 def ver_estadisticas():
     docs = vector_store.documentos
     print("\n" + "─"*55)
-    print(f"📊 ESTADÍSTICAS DEL ÍNDICE RAG DE AMMAYIA")
+    print(f"📊 ESTADÍSTICAS DEL ÍNDICE RAG DE AMMAIA")
     print("─"*55)
     print(f"• Total de Artículos y Sentencias Indexadas: {len(docs)}")
     

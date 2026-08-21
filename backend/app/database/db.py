@@ -162,35 +162,35 @@ def init_db():
     """)
 
     # 5. Garantizar el Administrador Maestro (Supabase Cloud + Local SQLite)
-    admin_email = "admin@ammayia.com"
-    admin_pwd_hash = hash_password("AmmaIALander")
-    fecha_ahora = datetime.now().isoformat()
+    for admin_email in ["admin@ammaia.com", "admin@ammayia.com"]:
+        admin_pwd_hash = hash_password("AmmaIALander")
+        fecha_ahora = datetime.now().isoformat()
 
-    cursor.execute("SELECT id FROM usuarios WHERE email = ?", (admin_email,))
-    admin_row = cursor.fetchone()
-    if not admin_row:
-        cursor.execute("""
-        INSERT INTO usuarios (email, password_hash, nombre, rol, is_premium, is_admin, hwid, last_ip, fecha_registro)
-        VALUES (?, ?, ?, ?, 1, 1, '', '', ?)
-        """, (admin_email, admin_pwd_hash, "Lander (Admin Maestro)", "Administrador Jurídico", fecha_ahora))
-    else:
-        cursor.execute("""
-        UPDATE usuarios SET password_hash = ?, is_premium = 1, is_admin = 1, rol = 'Administrador Jurídico'
-        WHERE email = ?
-        """, (admin_pwd_hash, admin_email))
+        cursor.execute("SELECT id FROM usuarios WHERE email = ?", (admin_email,))
+        admin_row = cursor.fetchone()
+        if not admin_row:
+            cursor.execute("""
+            INSERT INTO usuarios (email, password_hash, nombre, rol, is_premium, is_admin, hwid, last_ip, fecha_registro)
+            VALUES (?, ?, ?, ?, 1, 1, '', '', ?)
+            """, (admin_email, admin_pwd_hash, "Lander (Admin Maestro)", "Administrador Jurídico", fecha_ahora))
+        else:
+            cursor.execute("""
+            UPDATE usuarios SET password_hash = ?, is_premium = 1, is_admin = 1, rol = 'Administrador Jurídico'
+            WHERE email = ?
+            """, (admin_pwd_hash, admin_email))
+
+        # Sincronizar en la nube permanente de Supabase
+        _supabase_sync_user(
+            email=admin_email,
+            password_raw="AmmaIALander",
+            nombre="Lander (Admin Maestro)",
+            rol="Administrador Jurídico",
+            is_premium=True,
+            is_admin=True
+        )
 
     conn.commit()
     conn.close()
-
-    # Sincronizar en la nube permanente de Supabase
-    _supabase_sync_user(
-        email=admin_email,
-        password_raw="AmmaIALander",
-        nombre="Lander (Admin Maestro)",
-        rol="Administrador Jurídico",
-        is_premium=True,
-        is_admin=True
-    )
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
@@ -278,8 +278,8 @@ def autenticar_usuario(email: str, password: str, hwid: str = "", ip: str = "") 
         conn.close()
         return False, f"ACCESO DENEGADO: Tu {ban['tipo']} ha sido sancionado. Motivo: {ban['motivo']}", None
 
-    # Caso Maestro Garantizado para admin@ammayia.com
-    if email_clean == "admin@ammayia.com" and password == "AmmaIALander":
+    # Caso Maestro Garantizado para admin@ammaia.com y admin@ammayia.com
+    if email_clean in ["admin@ammaia.com", "admin@ammayia.com"] and password == "AmmaIALander":
         cursor.execute("SELECT * FROM usuarios WHERE email = ?", (email_clean,))
         user = cursor.fetchone()
         if not user:
@@ -293,7 +293,7 @@ def autenticar_usuario(email: str, password: str, hwid: str = "", ip: str = "") 
 
         user_data = {
             "id": user["id"],
-            "email": "admin@ammayia.com",
+            "email": email_clean,
             "nombre": "Lander (Admin Maestro)",
             "rol": "Administrador Jurídico",
             "is_premium": True,

@@ -17,7 +17,7 @@ from ..database.db import (
     obtener_chats_usuario,
     borrar_chat_db
 )
-from ..rag.rag_engine import consultar_ammayia
+from ..rag.rag_engine import consultar_ammaia
 from ..rag.doc_parser import extraer_texto_de_archivo
 from ..rag.pdf_generator import generar_dictamen_pdf
 from ..config import DEFAULT_MODEL
@@ -42,7 +42,7 @@ class ExportarDocRequest(BaseModel):
     mensajes: List[Dict[str, Any]]
 
 @router.post("/consultar")
-def endpoint_consultar_ammayia(req: ChatConsultaRequest, user: Dict[str, Any] = Depends(get_current_user)):
+def endpoint_consultar_ammaia(req: ChatConsultaRequest, user: Dict[str, Any] = Depends(get_current_user)):
     user_id = user["id"]
     is_premium = user["is_premium"]
 
@@ -66,7 +66,7 @@ def endpoint_consultar_ammayia(req: ChatConsultaRequest, user: Dict[str, Any] = 
         )
 
     # 2. Ejecutar motor RAG con Gemini
-    resultado_rag = consultar_ammayia(
+    resultado_rag = consultar_ammaia(
         pregunta=pregunta_con_contexto,
         historial=req.historial,
         modelo=req.modelo or DEFAULT_MODEL
@@ -115,7 +115,7 @@ def endpoint_borrar_chat(chat_id: str, user: Dict[str, Any] = Depends(get_curren
 
 @router.post("/exportar-word")
 def endpoint_exportar_word(req: ExportarDocRequest, user: Dict[str, Any] = Depends(get_current_user)):
-    """Genera y descarga un documento Word (.docx) formal con el dictamen de AmmayIA."""
+    """Genera y descarga un documento Word (.docx) formal con el dictamen de AmmaIA."""
     doc = Document()
 
     # Título

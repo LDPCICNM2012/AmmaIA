@@ -1,1 +1,1 @@
-# AmmayIA App Package
+# AmmaIA App Package

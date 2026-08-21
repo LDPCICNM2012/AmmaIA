@@ -139,9 +139,9 @@ def obtener_enlace_exacto_articulo(norma: str, articulo: str, url_existente: str
         return generar_enlace_directo_boe(norma, articulo)
     return url_existente
 
-def consultar_ammayia(pregunta: str, historial: Optional[List[Dict[str, Any]]] = None, modelo: Optional[str] = None) -> Dict[str, Any]:
+def consultar_ammaia(pregunta: str, historial: Optional[List[Dict[str, Any]]] = None, modelo: Optional[str] = None) -> Dict[str, Any]:
     """
-    Ejecuta el pipeline RAG conversacional completo de AmmayIA con máxima profundidad analítica y enlaces directos a cada artículo.
+    Ejecuta el pipeline RAG conversacional completo de AmmaIA con máxima profundidad analítica y enlaces directos a cada artículo.
     """
     # 1. Recuperar contexto jurídico del Vector Store
     documentos_recuperados = vector_store.busqueda_hibrida(pregunta, top_k=5)
@@ -179,7 +179,7 @@ def consultar_ammayia(pregunta: str, historial: Optional[List[Dict[str, Any]]] =
     if not api_key:
         return {
             "respuesta": (
-                f"⚖️ **Dictamen Jurídico de AmmayIA (Modo Contextual RAG)**\n\n"
+                f"⚖️ **Dictamen Jurídico de AmmaIA (Modo Contextual RAG)**\n\n"
                 f"📌 **Conclusión Preliminar:**\n"
                 f"Respecto a su consulta sobre *'{pregunta}'*, se han identificado las disposiciones y precedentes normativos aplicables en el ordenamiento jurídico español.\n\n"
                 f"📜 **Normativa Aplicable Identificada:**\n"
@@ -270,5 +270,5 @@ def consultar_ammayia(pregunta: str, historial: Optional[List[Dict[str, Any]]] =
         }
 
 # Alias para compatibilidad
-consultar_ammaia = consultar_ammayia
+consultar_ammayia = consultar_ammaia
 

@@ -8,7 +8,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 
 def generar_dictamen_pdf(titulo: str, mensajes: List[Dict[str, str]], usuario_nombre: str) -> io.BytesIO:
     """
-    Genera un archivo PDF profesional y elegante con el dictamen de AmmayIA.
+    Genera un archivo PDF profesional y elegante con el dictamen de AmmaIA.
     """
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(

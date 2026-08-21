@@ -63,7 +63,6 @@ ADMIN_EMAILS = [
     "admin@ammaia.com",
     "admin@ammayia.com",
     "lander@ammaia.com",
-    "lander@ammayia.com",
     "soporte@ammaia.com",
 ]
 
