@@ -1,0 +1,66 @@
+# ── Byte-compiled / optimized / DLL files ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+
+# ── C extensions & builds ──
+build/
+dist/
+bin/
+eggs/
+.eggs/
+*.egg-info/
+*.egg
+
+# ── Packaging / PyInstaller / Inno Setup ──
+*.spec
+*.iss
+*.manifest
+
+# ── Virtual Environments ──
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ── OS Generated Files ──
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ── IDE / Editor specific ──
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.sublime-workspace
+*.sublime-project
+
+# ── Local Secrets, Environment, Tokens & Databases ──
+.env
+.env.local
+.env.*.local
+*.token.json
+*.log
+*.sqlite
+*.sqlite3
+*.db
+!data/.gitkeep
+
+# ── Temporary / Cache files ──
+.pytest_cache/
+.coverage
+htmlcov/
+tmp/
+*.tmp
+*.bak

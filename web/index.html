@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AmmaIA — Inteligencia Artificial Jurídica para España</title>
+  <meta name="description" content="Copiloto de Inteligencia Artificial Jurídica con RAG especializado en el Ordenamiento Jurídico Español, BOE, Códigos Consolidados, CENDOJ y Tribunal Constitucional.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css?v=4.0">
+  <!-- Marked.js para formatear respuestas en Markdown de manera nativa -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+
+  <div id="app-container">
+
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar">
+      <!-- Marca -->
+      <div class="brand-header">
+        <div class="brand-logo-icon">⚖️</div>
+        <div>
+          <h1 class="brand-title">AmmaIA</h1>
+          <div class="brand-tagline">IA Jurídica • Derecho Español</div>
+        </div>
+      </div>
+
+      <!-- Tarjeta de Usuario / Cuota -->
+      <div class="user-card" id="user-card-display">
+        <div class="user-card-header">
+          <span class="user-name" id="display-user-name">Invitado</span>
+          <span class="user-role-badge" id="display-user-role">Abogado</span>
+        </div>
+        <div class="quota-pill" id="display-quota-badge">
+          <span>⏱️</span>
+          <span id="quota-text">5/5 consultas hoy</span>
+        </div>
+      </div>
+
+      <!-- Botón Nueva Consulta -->
+      <button class="btn-new-chat" id="btn-new-chat">
+        <span>✨</span>
+        <span>Nueva Consulta Legal</span>
+      </button>
+
+      <!-- Historial de Consultas -->
+      <div class="sidebar-section-title">Historial de Dictámenes</div>
+      <div class="chat-history-list" id="chat-history-list">
+        <!-- Rellenado dinámicamente con JS -->
+      </div>
+
+      <!-- Footer Sidebar -->
+      <div class="sidebar-footer">
+        <button class="btn-secondary" id="btn-open-boe-modal">
+          <span>📜</span>
+          <span>BOE del Día & Códigos</span>
+        </button>
+
+        <button class="btn-secondary btn-admin" id="btn-open-admin-modal" style="display: none;">
+          <span>👑</span>
+          <span>Panel Maestro Admin</span>
+        </button>
+
+        <button class="btn-secondary" id="btn-auth-toggle">
+          <span>👤</span>
+          <span id="auth-btn-text">Iniciar Sesión</span>
+        </button>
+
+        <button class="btn-secondary" id="btn-delete-account" style="display: none; color: #f87171; border-color: rgba(239, 68, 68, 0.3); font-size: 11px; margin-top: 4px;" onclick="solicitarEliminarCuenta()">
+          <span>🗑️</span>
+          <span>Eliminar mi Cuenta</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ── Main Chat Screen ── -->
+    <main class="main-chat">
+      <!-- Topbar -->
+      <header class="chat-topbar">
+        <div class="topbar-info">
+          <div class="status-indicator">
+            <span>●</span>
+            <span>RAG Conectado (BOE + CENDOJ)</span>
+          </div>
+          <span style="font-size: 12px; color: var(--text-dim);">|</span>
+          <span style="font-size: 12px; color: var(--text-muted);" id="current-chat-title">Nueva Consulta</span>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="btn-secondary" id="btn-export-pdf" title="Descargar Dictamen en PDF Oficial">
+            <span>📕</span>
+            <span>Exportar PDF</span>
+          </button>
+
+          <button class="btn-secondary" id="btn-export-word" title="Descargar Dictamen en Word (.docx)">
+            <span>📄</span>
+            <span>Exportar Word</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Messages Viewport -->
+      <section class="chat-messages-viewport" id="chat-viewport">
+        <!-- Hero inicial si no hay mensajes -->
+        <div class="welcome-hero" id="welcome-hero">
+          <div class="hero-icon">⚖️</div>
+          <h2 class="hero-title">AmmaIA Jurídica</h2>
+          <p class="hero-desc">
+            Asistente de Inteligencia Artificial especializado en el Ordenamiento Jurídico Español.
+            Consultas fundamentadas en el <strong>BOE, Códigos Consolidados, Jurisprudencia del Tribunal Supremo (CENDOJ) y Tribunal Constitucional</strong> con trazabilidad y citas exactas.
+          </p>
+
+          <div class="prompt-chips-grid">
+            <div class="prompt-chip" data-query="¿Qué requisitos exige el artículo 20.4 del Código Penal para apreciar la eximente completa de Legítima Defensa?">
+              ⚖️ <strong>Legítima Defensa (Art. 20.4 CP)</strong>
+              <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">Requisitos y jurisprudencia del TS</div>
+            </div>
+
+            <div class="prompt-chip" data-query="Explícame la diferencia entre el delito de hurto (Art. 234 CP) y robo con fuerza (Art. 238 CP) según la jurisprudencia consolidada.">
+              📜 <strong>Hurto vs. Robo con Fuerza</strong>
+              <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">Artículos 234 y 238 CP y penalidad</div>
+            </div>
+
+            <div class="prompt-chip" data-query="¿Cuáles son los plazos y causas para impugnar un despido disciplinario y calcular la indemnización por despido improcedente según el Estatuto de los Trabajadores?">
+              💼 <strong>Despido Disciplinario (ET)</strong>
+              <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">Art. 54 y 56 Estatuto Trabajadores</div>
+            </div>
+
+            <div class="prompt-chip" data-query="¿Cómo se computan los plazos para interponer recurso de apelación civil según el artículo 448 de la Ley de Enjuiciamiento Civil?">
+              🏛️ <strong>Recursos en la LEC (Art. 448)</strong>
+              <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">Plazos y cómputo procesal</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Los mensajes se inyectan dinámicamente aquí -->
+      </section>
+
+      <!-- Input Area -->
+      <footer class="chat-input-area">
+        <!-- Badge de Documento Adjunto Seleccionado -->
+        <div id="attachment-preview-container" class="attachment-preview" style="display: none;">
+          <div class="attachment-pill">
+            <span id="attachment-icon">📄</span>
+            <span id="attachment-name">documento.pdf</span>
+            <span id="attachment-size" style="color: var(--text-dim); font-size: 10px;">(0 KB)</span>
+            <button id="btn-remove-attachment" class="btn-remove-attach" title="Quitar archivo">✕</button>
+          </div>
+        </div>
+
+        <div class="chat-input-wrapper">
+          <!-- Input oculto para subir archivos -->
+          <input type="file" id="file-attachment-input" style="display: none;" accept=".pdf,.docx,.doc,.txt,.json,.md,.csv">
+          
+          <button class="btn-attach" id="btn-attach-file" title="Adjuntar Documento Legal (PDF, Word, TXT)">
+            <span>📎</span>
+          </button>
+
+          <textarea id="chat-input" placeholder="Formula tu consulta jurídica o redacta una petición sobre el documento adjunto..." rows="1"></textarea>
+          
+          <button class="btn-send" id="btn-send" title="Enviar Consulta">
+            <span>➤</span>
+          </button>
+        </div>
+      </footer>
+    </main>
+
+  </div>
+
+  <!-- ── MODAL: Login & Registro ── -->
+  <div class="modal-backdrop" id="modal-auth">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title" id="auth-modal-title">Acceso a AmmaIA</div>
+        <button class="btn-close-modal" id="btn-close-auth">✕</button>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-bottom: 18px;">
+        <button class="btn-secondary" id="tab-login" style="flex: 1; border-color: var(--gold-primary);">Iniciar Sesión</button>
+        <button class="btn-secondary" id="tab-register" style="flex: 1;">Registrarse</button>
+      </div>
+
+      <form id="auth-form">
+        <div class="form-group" id="group-nombre" style="display: none;">
+          <label class="form-label">Nombre y Apellidos</label>
+          <input type="text" class="form-input" id="auth-nombre" placeholder="Letrado/a Carlos Gómez">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Correo Electrónico</label>
+          <input type="email" class="form-input" id="auth-email" placeholder="abogado@despacho.es" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Contraseña</label>
+          <input type="password" class="form-input" id="auth-password" placeholder="••••••••" required>
+        </div>
+
+        <div class="form-group" id="group-rol" style="display: none;">
+          <label class="form-label">Especialidad / Rol Jurídico</label>
+          <select class="form-select" id="auth-rol">
+            <option value="Abogado">Abogado / Letrado</option>
+            <option value="Juez/Magistrado">Juez / Magistrado</option>
+            <option value="Fiscal">Fiscal</option>
+            <option value="Procurador">Procurador</option>
+            <option value="Opositor">Opositor a Judicatura / Notarías</option>
+            <option value="Jurista">Jurista de Empresa</option>
+          </select>
+        </div>
+
+        <div id="auth-error-msg" style="color: var(--danger); font-size: 12px; margin-bottom: 10px;"></div>
+
+        <button type="submit" class="btn-primary-block" id="btn-auth-submit">Entrar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── MODAL: Panel Maestro de Administración & Inspector del Servidor ── -->
+  <div class="modal-backdrop" id="modal-admin">
+    <div class="modal-dialog large" style="max-width: 1020px; width: 95%;">
+      <div class="modal-header">
+        <div class="modal-title">👑 Inspector del Servidor & Panel Maestro — AmmaIA</div>
+        <button class="btn-close-modal" id="btn-close-admin">✕</button>
+      </div>
+
+      <!-- Barra de Pestañas Admin -->
+      <div style="display: flex; gap: 8px; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; overflow-x: auto;">
+        <button class="btn-secondary active" id="btn-tab-admin-metrics" onclick="switchAdminTab('metrics')">📊 Métricas</button>
+        <button class="btn-secondary" id="btn-tab-admin-users" onclick="switchAdminTab('users')">👥 Usuarios & VIP</button>
+        <button class="btn-secondary" id="btn-tab-admin-chats" onclick="switchAdminTab('chats')">🔒 Consultas (Cifrado LOPJ)</button>
+        <button class="btn-secondary" id="btn-tab-admin-bans" onclick="switchAdminTab('bans')">🛡️ Lista Negra</button>
+        <button class="btn-secondary" id="btn-tab-admin-raw" onclick="switchAdminTab('raw')">⚡ Servidor en RAW</button>
+      </div>
+
+      <!-- 1. PESTAÑA MÉTRICAS -->
+      <div id="admin-view-metrics" class="admin-tab-view">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px;">
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; text-align: center;">
+            <div style="font-size: 24px; font-weight: 800; color: var(--gold-primary);" id="metric-total-users">-</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">👥 Usuarios Registrados</div>
+          </div>
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; text-align: center;">
+            <div style="font-size: 24px; font-weight: 800; color: #c084fc;" id="metric-total-premium">-</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">👑 Cuentas Premium / VIP</div>
+          </div>
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; text-align: center;">
+            <div style="font-size: 24px; font-weight: 800; color: var(--cyan-primary);" id="metric-queries-today">-</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">⚡ Consultas Realizadas Hoy</div>
+          </div>
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; text-align: center;">
+            <div style="font-size: 24px; font-weight: 800; color: var(--gold-primary);" id="metric-rag-chunks">-</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">📜 Preceptos y Sentencias RAG</div>
+          </div>
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; text-align: center;">
+            <div style="font-size: 24px; font-weight: 800; color: var(--danger);" id="metric-total-bans">-</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">⛔ Sanciones Activas</div>
+          </div>
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; text-align: center;">
+            <div style="font-size: 24px; font-weight: 800; color: var(--success);" id="metric-db-size">-</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">💾 Tamaño Base de Datos</div>
+          </div>
+        </div>
+
+        <div style="background: var(--bg-card-light); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; font-size: 12px;">
+          <div style="font-weight: 700; color: var(--gold-primary); margin-bottom: 8px;">⚙️ Estado de los Servicios del Servidor:</div>
+          <div>• <strong>FastAPI Backend:</strong> <span style="color: var(--success);">Online en 127.0.0.1:8000</span></div>
+          <div>• <strong>Demonio BOE Diario:</strong> <span style="color: var(--success);">Activo (Sincronización matutina configurada a las 07:30 AM)</span></div>
+          <div>• <strong>CENDOJ Jurisprudencia:</strong> <span style="color: var(--success);">Tribunal Supremo (Salas 1ª, 2ª, 4ª) + TC conectados</span></div>
+          <div>• <strong>Privacidad de Datos:</strong> <span style="color: var(--cyan-primary);">Cifrado de extremo a extremo conforme a Secreto Profesional (Art. 542 LOPJ)</span></div>
+        </div>
+      </div>
+
+      <!-- 2. PESTAÑA USUARIOS -->
+      <div id="admin-view-users" class="admin-tab-view" style="display: none;">
+        <div class="admin-table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre & Email</th>
+                <th>Rol</th>
+                <th>IP / HWID</th>
+                <th>👑 Premium VIP</th>
+                <th>Acciones de Moderación</th>
+              </tr>
+            </thead>
+            <tbody id="admin-users-tbody">
+              <!-- Rellenado por JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3. PESTAÑA AUDITORÍA CHATS (CIFRADOS) -->
+      <div id="admin-view-chats" class="admin-tab-view" style="display: none;">
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
+          🔒 <strong>Aviso de Cumplimiento Legal:</strong> Conforme al Secreto Profesional del Abogado (Art. 542 LOPJ) y RGPD, los mensajes y consultas de los clientes no son legibles en texto plano por administradores.
+        </p>
+        <div class="admin-table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ID Chat</th>
+                <th>Letrado / Usuario</th>
+                <th>Fecha y Hora</th>
+                <th>Asunto</th>
+                <th>Nº Mensajes</th>
+                <th>Estado de Cifrado</th>
+              </tr>
+            </thead>
+            <tbody id="admin-chats-tbody">
+              <!-- Rellenado por JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 4. PESTAÑA SANCIONES ACTIVAS -->
+      <div id="admin-view-bans" class="admin-tab-view" style="display: none;">
+        <div class="admin-table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Objetivo Sancionado</th>
+                <th>Tipo de Sanción</th>
+                <th>Motivo Registrado</th>
+                <th>Fecha de Sanción</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="admin-bans-tbody">
+              <!-- Rellenado por JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 5. PESTAÑA SERVIDOR EN RAW -->
+      <div id="admin-view-raw" class="admin-tab-view" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <div style="font-size: 12px; color: var(--text-muted);">
+            ⚡ <strong>RAW Data Dump:</strong> Acceso completo sin procesar a todas las tablas SQLite, Vector Store y registros del servidor.
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="copiarRawJson()">📋 Copiar JSON</button>
+            <button class="btn-secondary" style="font-size: 11px; padding: 4px 10px; color: var(--gold-primary);" onclick="descargarRawJson()">💾 Descargar Dump .json</button>
+          </div>
+        </div>
+        <pre id="admin-raw-container" style="background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; max-height: 420px; overflow: auto; font-family: 'Consolas', 'Monaco', monospace; font-size: 11px; color: #a5f3fc; line-height: 1.5; white-space: pre-wrap; word-break: break-all;">Cargando datos brutos del servidor...</pre>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── MODAL: BOE del Día & Catálogo de Códigos ── -->
+  <div class="modal-backdrop" id="modal-boe">
+    <div class="modal-dialog large">
+      <div class="modal-header">
+        <div class="modal-title">📜 Disposiciones del BOE & Códigos Consolidados</div>
+        <button class="btn-close-modal" id="btn-close-boe">✕</button>
+      </div>
+
+      <div style="max-height: 440px; overflow-y: auto;" id="boe-content-list">
+        <div style="color: var(--text-muted); font-size: 13px;">Cargando disposiciones oficiales del BOE...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js?v=4.0"></script>
+</body>
+</html>
