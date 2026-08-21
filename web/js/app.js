@@ -2,7 +2,25 @@
    AmmaIA — Frontend Logic (Chat RAG, Auth, Admin, Attachments & PDF)
 ───────────────────────────────────────────────────────────── */
 
-const API_BASE = window.location.origin;
+function resolveApiBase() {
+  const custom = localStorage.getItem("ammaia_custom_backend");
+  if (custom) return custom.replace(/\/$/, "");
+
+  // Si se abre el archivo localmente como file:///
+  if (window.location.protocol === "file:") {
+    return "http://127.0.0.1:8000";
+  }
+
+  // Si se aloja en GitHub Pages (ej: ldpcicnm2012.github.io)
+  if (window.location.hostname.includes("github.io")) {
+    const renderUrl = localStorage.getItem("ammaia_render_url");
+    return renderUrl || "https://ammaia-backend.onrender.com";
+  }
+
+  return window.location.origin;
+}
+
+let API_BASE = resolveApiBase();
 
 let currentUser = null;
 let currentToken = localStorage.getItem("ammaia_token") || localStorage.getItem("ammayia_token") || "";
@@ -334,7 +352,12 @@ async function handleAuthSubmit(e) {
     cerrarModal("modal-auth");
     cargarHistorial();
   } catch (err) {
-    errEl.textContent = "Error de conexión con el servidor.";
+    console.error("Error en fetch de autenticación:", err);
+    if (window.location.protocol === "file:") {
+      errEl.innerHTML = `⚠️ No se pudo conectar con el servidor local (<b>http://127.0.0.1:8000</b>).<br>Asegúrate de ejecutar <code>python run_backend.py</code> en tu terminal.`;
+    } else {
+      errEl.innerHTML = `⚠️ No se pudo conectar con el servidor (<code>${API_BASE}</code>).<br>Verifica tu conexión y que el backend esté activo.`;
+    }
   }
 }
 

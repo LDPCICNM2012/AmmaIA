@@ -969,3 +969,25 @@ input:checked + .slider:before {
   from { transform: translateY(20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* Desktop App Banner Card */
+.desktop-banner-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.08) 0%, rgba(30, 41, 59, 0.4) 100%);
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin-top: 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.desktop-banner-card:hover {
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.16) 0%, rgba(30, 41, 59, 0.6) 100%);
+  border-color: var(--gold-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow-gold);
+}

@@ -53,6 +53,11 @@
 
       <!-- Footer Sidebar -->
       <div class="sidebar-footer">
+        <button class="btn-secondary" id="btn-sidebar-download" onclick="abrirModal('modal-download-desktop')">
+          <span>💻</span>
+          <span>App de Escritorio (.exe)</span>
+        </button>
+
         <button class="btn-secondary" id="btn-open-boe-modal">
           <span>📜</span>
           <span>BOE del Día & Códigos</span>
@@ -89,6 +94,11 @@
         </div>
 
         <div class="topbar-actions">
+          <button class="btn-secondary" id="btn-topbar-download" onclick="abrirModal('modal-download-desktop')" style="color: var(--gold-primary); border-color: rgba(217, 119, 6, 0.4);" title="Descargar AmmaIA para Escritorio (Windows .exe)">
+            <span>💻</span>
+            <span>Descargar Desktop</span>
+          </button>
+
           <button class="btn-secondary" id="btn-export-pdf" title="Descargar Dictamen en PDF Oficial">
             <span>📕</span>
             <span>Exportar PDF</span>
@@ -132,6 +142,16 @@
               🏛️ <strong>Recursos en la LEC (Art. 448)</strong>
               <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">Plazos y cómputo procesal</div>
             </div>
+          </div>
+
+          <!-- Banner Promocional de la versión Desktop -->
+          <div class="desktop-banner-card" onclick="abrirModal('modal-download-desktop')">
+            <div style="font-size: 26px;">💻</div>
+            <div style="flex: 1; text-align: left;">
+              <div style="font-weight: 700; color: #fff; font-size: 13px;">¿Prefieres software nativo de escritorio?</div>
+              <div style="color: var(--text-muted); font-size: 11px; margin-top: 2px;">Descarga AmmaIA para Windows (.exe) con aceleración local, sincronización en segundo plano y máxima privacidad.</div>
+            </div>
+            <button class="btn-primary" style="padding: 7px 14px; font-size: 12px; white-space: nowrap; pointer-events: none;">Descargar .exe</button>
           </div>
         </div>
 
@@ -365,6 +385,41 @@
 
       <div style="max-height: 440px; overflow-y: auto;" id="boe-content-list">
         <div style="color: var(--text-muted); font-size: 13px;">Cargando disposiciones oficiales del BOE...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL: Descargar AmmaIA para Escritorio ── -->
+  <div class="modal-backdrop" id="modal-download-desktop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">💻 Descargar AmmaIA para Escritorio</div>
+        <button class="btn-close-modal" id="btn-close-download" onclick="cerrarModal('modal-download-desktop')">✕</button>
+      </div>
+
+      <div style="padding: 10px 0;">
+        <div style="background: rgba(217, 119, 6, 0.1); border: 1px solid rgba(217, 119, 6, 0.3); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 16px;">
+          <div style="font-weight: 700; color: var(--gold-primary); font-size: 14px; margin-bottom: 4px;">⚡ AmmaIA para Windows (.exe)</div>
+          <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0;">
+            Software nativo diseñado para letrados y magistrados. Sin depender del navegador web, con aceleración por hardware, atajos de teclado y máxima privacidad.
+          </p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+          <a href="https://github.com/LDPCICNM2012/AmmaIA/releases" target="_blank" class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; padding: 12px; font-size: 13px; font-weight: 600; text-align: center;">
+            <span>📥</span>
+            <span>Descargar AmmaIA.exe (Última Versión en GitHub)</span>
+          </a>
+
+          <a href="https://github.com/LDPCICNM2012/AmmaIA" target="_blank" class="btn-secondary" style="display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; padding: 10px; font-size: 12px; text-align: center;">
+            <span>🐙</span>
+            <span>Ver Repositorio y Código Fuente</span>
+          </a>
+        </div>
+
+        <div style="font-size: 11px; color: var(--text-dim); line-height: 1.6; border-top: 1px solid var(--border-color); padding-top: 10px;">
+          💡 <b>Instrucciones:</b> Descarga <code>AmmaIA.exe</code> desde GitHub Releases y ejecútalo directamente en tu equipo Windows.
+        </div>
       </div>
     </div>
   </div>
