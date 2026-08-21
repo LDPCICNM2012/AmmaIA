@@ -18,6 +18,10 @@ JWT_SECRET = os.getenv("JWT_SECRET", "ammaia_legal_secure_jwt_secret_key_2026_su
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_HOURS = 24 * 30  # 30 días de sesión
 
+# Conexión a Base de Datos Cloud Supabase Propia de AmmaIA
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://duskzcakagxsujvfnfln.supabase.co/rest/v1").rstrip("/")
+SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY", os.getenv("SUPABASE_KEY", "sb_publishable_7WGpzEI0PI6AMkpDPs5y1w_WbPaQP81"))
+
 # Rutas de configuración y secretos locales
 USER_CONFIG_DIR = Path.home() / ".ammaia"
 USER_CONFIG_FILE = USER_CONFIG_DIR / "config.json"
@@ -37,18 +41,6 @@ def _obtener_gemini_key() -> str:
                 key_local = data.get("gemini_key") or data.get("GEMINI_API_KEY", "")
                 if key_local:
                     return str(key_local).strip()
-        except Exception:
-            pass
-
-    # 3. Fallback a configuración de KernossAI si estuviera presente
-    kernoss_config = Path.home() / ".kernossai" / "config.json"
-    if kernoss_config.exists():
-        try:
-            with open(kernoss_config, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                key_k = data.get("gemini_key", "")
-                if key_k:
-                    return str(key_k).strip()
         except Exception:
             pass
 

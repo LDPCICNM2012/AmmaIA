@@ -1,10 +1,103 @@
 import sqlite3
 import hashlib
 import json
+import secrets
+import requests
 from datetime import datetime, date
 from typing import Optional, List, Dict, Any
 from pathlib import Path
-from ..config import DB_PATH, ADMIN_EMAILS
+from ..config import DB_PATH, ADMIN_EMAILS, SUPABASE_URL, SUPABASE_KEY
+
+def _supabase_headers() -> Dict[str, str]:
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return {}
+    return {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+    }
+
+def _supabase_get_user(email: str) -> Optional[Dict[str, Any]]:
+    """Consulta los datos del usuario en la base de datos de Supabase si está configurada."""
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return None
+    try:
+        r = requests.get(
+            f"{SUPABASE_URL}/usuarios?email=eq.{email.strip().lower()}",
+            headers=_supabase_headers(),
+            timeout=5
+        )
+        if r.status_code == 200:
+            usrs = r.json()
+            if usrs and len(usrs) > 0:
+                return usrs[0]
+    except Exception:
+        pass
+    return None
+
+def _supabase_sync_user(email: str, password_raw: str, nombre: str, rol: str, is_premium: bool, is_admin: bool, hwid: str = "", ip: str = ""):
+    """Sincroniza un usuario con Supabase Cloud si está configurada."""
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return
+    try:
+        salt = secrets.token_hex(16)
+        pwd_hash = hashlib.pbkdf2_hmac("sha256", password_raw.encode("utf-8"), salt.encode("utf-8"), 100000).hex()
+        payload = {
+            "email": email.strip().lower(),
+            "password_hash": pwd_hash,
+            "salt": salt,
+            "nombre": nombre,
+            "rol": rol,
+            "is_premium": bool(is_premium),
+            "is_admin": bool(is_admin),
+            "hwid": hwid or "",
+            "last_ip": ip or ""
+        }
+        requests.post(
+            f"{SUPABASE_URL}/usuarios",
+            json=payload,
+            headers=_supabase_headers(),
+            timeout=5
+        )
+    except Exception:
+        pass
+
+def _supabase_delete_user(email: str):
+    """Elimina definitivamente un usuario en Supabase Cloud si está configurada."""
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return
+    try:
+        requests.delete(
+            f"{SUPABASE_URL}/usuarios?email=eq.{email.strip().lower()}",
+            headers=_supabase_headers(),
+            timeout=5
+        )
+    except Exception:
+        pass
+
+def _supabase_verificar_ban(email: str, ip: str, hwid: str) -> Optional[Dict[str, str]]:
+    """Verifica si el usuario, IP o HWID están baneados en Supabase si está configurada."""
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return None
+    try:
+        r = requests.get(f"{SUPABASE_URL}/bans", headers=_supabase_headers(), timeout=4)
+        if r.status_code == 200:
+            bans = r.json()
+            em_clean = email.strip().lower() if email else ""
+            ip_clean = ip.strip().lower() if ip else ""
+            hw_clean = hwid.strip().lower() if hwid else ""
+
+            for b in bans:
+                target = (b.get("target") or b.get("objetivo") or "").strip().lower()
+                tipo = (b.get("tipo") or "cuenta").strip().lower()
+                motivo = b.get("motivo") or "Sanción aplicada por moderación"
+
+                if (em_clean and target == em_clean) or (ip_clean and target == ip_clean) or (hw_clean and target == hw_clean):
+                    return {"tipo": tipo, "motivo": motivo}
+    except Exception:
+        pass
+    return None
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -12,7 +105,7 @@ def get_db_connection():
     return conn
 
 def init_db():
-    """Inicializa las tablas de la base de datos de AmmayIA."""
+    """Inicializa las tablas locales SQLite y sincroniza con Supabase Cloud."""
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -32,7 +125,7 @@ def init_db():
     )
     """)
 
-    # 2. Tabla de Cuotas Diarias (control de 5 msgs/día para cuentas gratis)
+    # 2. Tabla de Cuotas Diarias
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS cuotas_diarias (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,18 +137,18 @@ def init_db():
     )
     """)
 
-    # 3. Tabla de Sanciones y Bans (Cuenta, IP, HWID)
+    # 3. Tabla de Sanciones y Bans
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS bans (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         target TEXT NOT NULL,
-        tipo TEXT NOT NULL, -- 'usuario', 'ip', 'hwid'
+        tipo TEXT NOT NULL,
         motivo TEXT NOT NULL,
         fecha_ban TEXT NOT NULL
     )
     """)
 
-    # 4. Tabla de Historial de Chats y Consultas Legales
+    # 4. Tabla de Historial de Chats
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS chats (
         id TEXT PRIMARY KEY,
@@ -68,8 +161,36 @@ def init_db():
     )
     """)
 
+    # 5. Garantizar el Administrador Maestro (Supabase Cloud + Local SQLite)
+    admin_email = "admin@ammayia.com"
+    admin_pwd_hash = hash_password("AmmaIALander")
+    fecha_ahora = datetime.now().isoformat()
+
+    cursor.execute("SELECT id FROM usuarios WHERE email = ?", (admin_email,))
+    admin_row = cursor.fetchone()
+    if not admin_row:
+        cursor.execute("""
+        INSERT INTO usuarios (email, password_hash, nombre, rol, is_premium, is_admin, hwid, last_ip, fecha_registro)
+        VALUES (?, ?, ?, ?, 1, 1, '', '', ?)
+        """, (admin_email, admin_pwd_hash, "Lander (Admin Maestro)", "Administrador Jurídico", fecha_ahora))
+    else:
+        cursor.execute("""
+        UPDATE usuarios SET password_hash = ?, is_premium = 1, is_admin = 1, rol = 'Administrador Jurídico'
+        WHERE email = ?
+        """, (admin_pwd_hash, admin_email))
+
     conn.commit()
     conn.close()
+
+    # Sincronizar en la nube permanente de Supabase
+    _supabase_sync_user(
+        email=admin_email,
+        password_raw="AmmaIALander",
+        nombre="Lander (Admin Maestro)",
+        rol="Administrador Jurídico",
+        is_premium=True,
+        is_admin=True
+    )
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
@@ -87,7 +208,7 @@ def crear_usuario(email: str, password: str, nombre: str, rol: str = "Abogado", 
         return False, "El correo electrónico ya está registrado.", None
 
     is_admin = 1 if email_clean in ADMIN_EMAILS else 0
-    is_premium = 1 if is_admin else 0  # Los admins tienen Premium ilimitado automáticamente
+    is_premium = 1 if is_admin else 0
     fecha = datetime.now().isoformat()
     pwd_hash = hash_password(password)
 
@@ -108,50 +229,131 @@ def crear_usuario(email: str, password: str, nombre: str, rol: str = "Abogado", 
             "is_admin": bool(is_admin)
         }
         conn.close()
+
+        # Guardar también en Supabase Cloud permanente
+        _supabase_sync_user(email_clean, password, nombre, rol, bool(is_premium), bool(is_admin), hwid, ip)
+
         return True, "Usuario registrado con éxito.", user_data
     except Exception as e:
         conn.close()
         return False, f"Error al registrar usuario: {e}", None
 
 def eliminar_usuario_db(user_id: int) -> bool:
-    """Elimina definitivamente un usuario y todos sus datos vinculados (Derecho al Olvido RGPD Art. 17)."""
+    """Elimina definitivamente un usuario y todos sus datos vinculados en SQLite y Supabase Cloud."""
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    cursor.execute("SELECT email FROM usuarios WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    email = row["email"] if row else None
+
     cursor.execute("DELETE FROM cuotas_diarias WHERE user_id = ?", (user_id,))
     cursor.execute("DELETE FROM chats WHERE user_id = ?", (user_id,))
     cursor.execute("DELETE FROM usuarios WHERE id = ?", (user_id,))
     conn.commit()
     deleted = cursor.rowcount > 0
     conn.close()
+
+    if email:
+        _supabase_delete_user(email)
+
     return deleted
 
 def autenticar_usuario(email: str, password: str, hwid: str = "", ip: str = "") -> tuple[bool, str, Optional[Dict[str, Any]]]:
     email_clean = email.strip().lower()
     pwd_hash = hash_password(password)
 
+    # 1. Verificar baneos en Supabase Cloud en tiempo real
+    ban_cloud = _supabase_verificar_ban(email_clean, ip, hwid)
+    if ban_cloud:
+        return False, f"ACCESO DENEGADO ({ban_cloud['tipo']}): {ban_cloud['motivo']}", None
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Verificar si el usuario, su IP o su HWID están baneados
+    # Verificar baneos locales
     cursor.execute("SELECT motivo, tipo FROM bans WHERE target IN (?, ?, ?)", (email_clean, ip, hwid))
     ban = cursor.fetchone()
     if ban:
         conn.close()
         return False, f"ACCESO DENEGADO: Tu {ban['tipo']} ha sido sancionado. Motivo: {ban['motivo']}", None
 
-    cursor.execute("SELECT * FROM usuarios WHERE email = ? AND password_hash = ?", (email_clean, pwd_hash))
+    # Caso Maestro Garantizado para admin@ammayia.com
+    if email_clean == "admin@ammayia.com" and password == "AmmaIALander":
+        cursor.execute("SELECT * FROM usuarios WHERE email = ?", (email_clean,))
+        user = cursor.fetchone()
+        if not user:
+            cursor.execute("""
+            INSERT INTO usuarios (email, password_hash, nombre, rol, is_premium, is_admin, hwid, last_ip, fecha_registro)
+            VALUES (?, ?, 'Lander (Admin Maestro)', 'Administrador Jurídico', 1, 1, ?, ?, ?)
+            """, (email_clean, pwd_hash, hwid, ip, datetime.now().isoformat()))
+            conn.commit()
+            cursor.execute("SELECT * FROM usuarios WHERE email = ?", (email_clean,))
+            user = cursor.fetchone()
+
+        user_data = {
+            "id": user["id"],
+            "email": "admin@ammayia.com",
+            "nombre": "Lander (Admin Maestro)",
+            "rol": "Administrador Jurídico",
+            "is_premium": True,
+            "is_admin": True
+        }
+        conn.close()
+        return True, "Autenticación de Administrador Maestro correcta.", user_data
+
+    # Buscar en base de datos local SQLite
+    cursor.execute("SELECT * FROM usuarios WHERE email = ?", (email_clean,))
     user = cursor.fetchone()
+
+    # Si no está en SQLite (por reinicio de Render), consultar Supabase Cloud
+    if not user:
+        u_sb = _supabase_get_user(email_clean)
+        if u_sb:
+            salt = u_sb.get("salt", "")
+            expected_hash = u_sb.get("password_hash")
+            es_valido = False
+            if salt and expected_hash:
+                calc_hash = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 100000).hex()
+                if calc_hash == expected_hash:
+                    es_valido = True
+            elif expected_hash == pwd_hash or u_sb.get("password") == password:
+                es_valido = True
+
+            if es_valido:
+                # Restaurar y cachear en SQLite local
+                cursor.execute("""
+                INSERT OR REPLACE INTO usuarios (email, password_hash, nombre, rol, is_premium, is_admin, hwid, last_ip, fecha_registro)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    email_clean,
+                    pwd_hash,
+                    u_sb.get("nombre", email_clean.split("@")[0].capitalize()),
+                    u_sb.get("rol", "Abogado"),
+                    1 if u_sb.get("is_premium") or email_clean in ADMIN_EMAILS else 0,
+                    1 if u_sb.get("is_admin") or email_clean in ADMIN_EMAILS else 0,
+                    hwid or u_sb.get("hwid", ""),
+                    ip or u_sb.get("ip_ultima", ""),
+                    u_sb.get("created_at", datetime.now().isoformat())
+                ))
+                conn.commit()
+                cursor.execute("SELECT * FROM usuarios WHERE email = ?", (email_clean,))
+                user = cursor.fetchone()
 
     if not user:
         conn.close()
-        return False, "Correo electrónico o contraseña incorrectos.", None
+        return False, "Usuario no encontrado. Comprueba tus datos o crea una cuenta.", None
 
-    # Actualizar último HWID e IP
-    cursor.execute("UPDATE usuarios SET last_ip = ?, hwid = ? WHERE id = ?", (ip, hwid, user["id"]))
-    conn.commit()
+    if user["password_hash"] != pwd_hash:
+        conn.close()
+        return False, "Contraseña incorrecta.", None
 
-    is_admin = bool(user["is_admin"] or email_clean in ADMIN_EMAILS)
-    is_premium = bool(user["is_premium"] or is_admin)
+    # Actualizar IP y HWID
+    try:
+        cursor.execute("UPDATE usuarios SET last_ip = ?, hwid = ? WHERE id = ?", (ip, hwid, user["id"]))
+        conn.commit()
+    except Exception:
+        pass
 
     user_data = {
         "id": user["id"],
